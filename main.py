@@ -7,6 +7,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import threading
 from pathlib import Path
+from tkinter import font
 
 # Thêm src vào path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
@@ -22,9 +23,12 @@ class TikTokReupApp:
     
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("TikTok Reup Offline")
-        self.root.geometry("1200x800")
+        self.root.title("🎬 TikTok Reup Offline")
+        self.root.geometry("1400x900")
         self.root.resizable(True, True)
+        
+        # Thiết lập theme và màu sắc
+        self.setup_theme()
         
         # Khởi tạo các component
         self.config = ConfigManager()
@@ -44,11 +48,210 @@ class TikTokReupApp:
         self.downloaded_files = []
         self.processed_files = []
     
+    def setup_theme(self):
+        """Thiết lập theme và màu sắc cho ứng dụng"""
+        # Màu sắc chính - Xanh lá cây đẹp mắt
+        self.colors = {
+            'primary': '#00b894',      # Green primary
+            'primary_dark': '#00a085', # Dark green
+            'primary_hover': '#00cec9', # Teal hover
+            'secondary': '#55efc4',    # Light green
+            'secondary_dark': '#00b894', # Green secondary
+            'success': '#00b894',      # Green success
+            'success_dark': '#00a085', # Dark green success
+            'warning': '#fdcb6e',      # Orange warning
+            'warning_dark': '#e17055', # Orange warning dark
+            'danger': '#e17055',       # Orange danger
+            'danger_dark': '#d63031',  # Red danger dark
+            'info': '#74b9ff',         # Blue info
+            'info_dark': '#0984e3',    # Dark blue info
+            'light': '#f8f9fa',        # Very light gray
+            'light_hover': '#e8f5e8',  # Light green hover
+            'dark': '#00b894',         # Green text
+            'gray': '#636e72',         # Medium gray
+            'white': '#ffffff',
+            'black': '#00b894',         # Green text
+            'gradient_start': '#00b894',
+            'gradient_end': '#00cec9',
+            'text_primary': '#00b894',  # Green text
+            'text_secondary': '#00a085' # Dark green text
+        }
+        
+        # Cấu hình style cho ttk
+        style = ttk.Style()
+        
+        # Cấu hình Notebook với tab màu vàng khi active
+        style.configure('TNotebook', 
+                       background=self.colors['light'],
+                       borderwidth=0)
+        style.configure('TNotebook.Tab',
+                       background=self.colors['white'],
+                       foreground=self.colors['text_primary'],
+                       padding=[20, 10],
+                       font=('Segoe UI', 10, 'bold'))
+        style.map('TNotebook.Tab',
+                 background=[('selected', '#ffd700'),  # Màu vàng khi active
+                           ('active', '#ffd700')],    # Màu vàng khi hover
+                 foreground=[('selected', self.colors['dark']),  # Chữ đen khi active
+                           ('active', self.colors['dark'])])    # Chữ đen khi hover
+        
+        # Cấu hình Frame
+        style.configure('Card.TFrame',
+                       background=self.colors['white'],
+                       relief='flat',
+                       borderwidth=1)
+        
+        # Cấu hình LabelFrame - sử dụng style mặc định để tránh lỗi chồng text
+        style.configure('Card.TLabelFrame',
+                       background=self.colors['white'],
+                       foreground=self.colors['text_primary'],
+                       font=('Segoe UI', 11, 'bold'),
+                       relief='flat',
+                       borderwidth=1)
+        style.configure('Card.TLabelFrame.Label',
+                       background=self.colors['white'],
+                       foreground=self.colors['text_primary'],
+                       font=('Segoe UI', 11, 'bold'))
+        
+        # Cấu hình Button với chữ màu xanh lá cây
+        style.configure('Primary.TButton',
+                       background=self.colors['white'],
+                       foreground=self.colors['text_primary'],
+                       font=('Segoe UI', 10, 'bold'),
+                       relief='flat',
+                       borderwidth=2,
+                       padding=[15, 10])
+        style.map('Primary.TButton',
+                 background=[('active', self.colors['light_hover']),
+                           ('pressed', self.colors['light_hover']),
+                           ('hover', self.colors['light_hover'])],
+                 foreground=[('active', self.colors['text_primary']),
+                           ('pressed', self.colors['text_primary']),
+                           ('hover', self.colors['text_primary'])],
+                 bordercolor=[('active', self.colors['text_primary']),
+                             ('pressed', self.colors['text_primary']),
+                             ('hover', self.colors['text_primary'])])
+        
+        style.configure('Success.TButton',
+                       background=self.colors['white'],
+                       foreground=self.colors['text_primary'],
+                       font=('Segoe UI', 10, 'bold'),
+                       relief='flat',
+                       borderwidth=2,
+                       padding=[15, 10])
+        style.map('Success.TButton',
+                 background=[('active', self.colors['light_hover']),
+                           ('pressed', self.colors['light_hover']),
+                           ('hover', self.colors['light_hover'])],
+                 foreground=[('active', self.colors['text_primary']),
+                           ('pressed', self.colors['text_primary']),
+                           ('hover', self.colors['text_primary'])],
+                 bordercolor=[('active', self.colors['text_primary']),
+                             ('pressed', self.colors['text_primary']),
+                             ('hover', self.colors['text_primary'])])
+        
+        style.configure('Danger.TButton',
+                       background=self.colors['white'],
+                       foreground=self.colors['text_primary'],
+                       font=('Segoe UI', 10, 'bold'),
+                       relief='flat',
+                       borderwidth=2,
+                       padding=[15, 10])
+        style.map('Danger.TButton',
+                 background=[('active', self.colors['light_hover']),
+                           ('pressed', self.colors['light_hover']),
+                           ('hover', self.colors['light_hover'])],
+                 foreground=[('active', self.colors['text_primary']),
+                           ('pressed', self.colors['text_primary']),
+                           ('hover', self.colors['text_primary'])],
+                 bordercolor=[('active', self.colors['text_primary']),
+                             ('pressed', self.colors['text_primary']),
+                             ('hover', self.colors['text_primary'])])
+        
+        style.configure('Info.TButton',
+                       background=self.colors['white'],
+                       foreground=self.colors['text_primary'],
+                       font=('Segoe UI', 10, 'bold'),
+                       relief='flat',
+                       borderwidth=2,
+                       padding=[15, 10])
+        style.map('Info.TButton',
+                 background=[('active', self.colors['light_hover']),
+                           ('pressed', self.colors['light_hover']),
+                           ('hover', self.colors['light_hover'])],
+                 foreground=[('active', self.colors['text_primary']),
+                           ('pressed', self.colors['text_primary']),
+                           ('hover', self.colors['text_primary'])],
+                 bordercolor=[('active', self.colors['text_primary']),
+                             ('pressed', self.colors['text_primary']),
+                             ('hover', self.colors['text_primary'])])
+        
+        # Cấu hình Entry với chữ màu xanh lá cây
+        style.configure('Modern.TEntry',
+                       fieldbackground=self.colors['white'],
+                       foreground=self.colors['text_primary'],
+                       font=('Segoe UI', 10),
+                       relief='flat',
+                       borderwidth=2,
+                       padding=[12, 10])
+        style.map('Modern.TEntry',
+                 fieldbackground=[('focus', self.colors['light']),
+                                ('hover', self.colors['light_hover'])],
+                 bordercolor=[('focus', self.colors['text_primary']),
+                            ('hover', self.colors['text_primary'])],
+                 foreground=[('focus', self.colors['text_primary']),
+                           ('hover', self.colors['text_primary'])])
+        
+        # Cấu hình Progressbar với gradient
+        style.configure('Modern.Horizontal.TProgressbar',
+                       background=self.colors['gradient_start'],
+                       troughcolor=self.colors['light'],
+                       borderwidth=0,
+                       lightcolor=self.colors['gradient_end'],
+                       darkcolor=self.colors['gradient_start'])
+        
+        # Cấu hình Treeview với hover effects
+        style.configure('Modern.Treeview',
+                       background=self.colors['white'],
+                       foreground=self.colors['dark'],
+                       font=('Segoe UI', 9),
+                       relief='flat',
+                       borderwidth=0,
+                       rowheight=25)
+        style.map('Modern.Treeview',
+                 background=[('selected', self.colors['primary']),
+                           ('hover', self.colors['light_hover'])],
+                 foreground=[('selected', self.colors['white']),
+                           ('hover', self.colors['dark'])])
+        style.configure('Modern.Treeview.Heading',
+                       background=self.colors['gradient_start'],
+                       foreground=self.colors['white'],
+                       font=('Segoe UI', 9, 'bold'),
+                       relief='flat')
+        style.map('Modern.Treeview.Heading',
+                 background=[('active', self.colors['gradient_end']),
+                           ('hover', self.colors['gradient_end'])])
+        
+        # Cấu hình Scrollbar
+        style.configure('Modern.Vertical.TScrollbar',
+                       background=self.colors['light'],
+                       troughcolor=self.colors['light'],
+                       borderwidth=0,
+                       arrowcolor=self.colors['gray'],
+                       darkcolor=self.colors['light'],
+                       lightcolor=self.colors['light'])
+        
+        # Thiết lập màu nền cho root
+        self.root.configure(bg=self.colors['light'])
+    
     def create_widgets(self):
         """Tạo các widget giao diện"""
+        # Tạo header với logo và title
+        self.create_header()
+        
         # Tạo notebook cho các tab
         self.notebook = ttk.Notebook(self.root)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 15))
         
         # Tab Download
         self.create_download_tab()
@@ -71,76 +274,164 @@ class TikTokReupApp:
         # Status bar
         self.create_status_bar()
     
+    def create_header(self):
+        """Tạo header với màu xanh lá cây"""
+        header_frame = tk.Frame(self.root, bg=self.colors['white'], height=90)
+        header_frame.pack(fill=tk.X, padx=0, pady=0)
+        header_frame.pack_propagate(False)
+        
+        # Container với nền trắng
+        gradient_frame = tk.Frame(header_frame, bg=self.colors['white'])
+        gradient_frame.pack(expand=True, fill=tk.BOTH)
+        
+        # Icon và title với màu xanh lá cây
+        title_label = tk.Label(gradient_frame, 
+                              text="🎬 TikTok Reup Offline", 
+                              font=('Segoe UI', 22, 'bold'),
+                              fg=self.colors['text_primary'],
+                              bg=self.colors['white'])
+        title_label.pack(side=tk.LEFT, padx=25, pady=25)
+        
+        # Subtitle với màu xanh lá cây
+        subtitle_label = tk.Label(gradient_frame,
+                                 text="✨ Professional Video Processing Tool",
+                                 font=('Segoe UI', 13),
+                                 fg=self.colors['text_secondary'],
+                                 bg=self.colors['white'])
+        subtitle_label.pack(side=tk.LEFT, padx=(15, 0), pady=25)
+        
+        # Version badge với màu xanh lá cây
+        version_frame = tk.Frame(gradient_frame, bg=self.colors['white'], relief='raised', bd=2)
+        version_frame.pack(side=tk.RIGHT, padx=25, pady=20)
+        version_label = tk.Label(version_frame,
+                                text="v2.0",
+                                font=('Segoe UI', 11, 'bold'),
+                                fg=self.colors['text_primary'],
+                                bg=self.colors['white'],
+                                padx=12,
+                                pady=6)
+        version_label.pack()
+    
     def create_download_tab(self):
         """Tạo tab Download"""
-        download_frame = ttk.Frame(self.notebook)
+        download_frame = ttk.Frame(self.notebook, style='Card.TFrame')
         self.notebook.add(download_frame, text="📥 Download")
         
         # URL input
-        url_frame = ttk.LabelFrame(download_frame, text="URL Video", padding=10)
-        url_frame.pack(fill=tk.X, padx=10, pady=5)
+        url_frame = ttk.LabelFrame(download_frame, text="🔗 URL Video", padding=15)
+        url_frame.pack(fill=tk.X, padx=15, pady=10)
+        
+        # URL input container
+        url_input_frame = tk.Frame(url_frame, bg=self.colors['white'])
+        url_input_frame.pack(fill=tk.X, pady=(5, 0))
         
         self.url_var = tk.StringVar()
-        url_entry = ttk.Entry(url_frame, textvariable=self.url_var, width=80)
+        url_entry = ttk.Entry(url_input_frame, textvariable=self.url_var, 
+                            style='Modern.TEntry', width=80)
         url_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10))
         
-        self.download_btn = ttk.Button(url_frame, text="Download", 
+        self.download_btn = ttk.Button(url_input_frame, text="⬇️ Download", 
+                                     style='Primary.TButton',
                                      command=self.download_video)
         self.download_btn.pack(side=tk.RIGHT)
         
         # Video info
-        info_frame = ttk.LabelFrame(download_frame, text="Thông tin Video", padding=10)
-        info_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        info_frame = ttk.LabelFrame(download_frame, text="📊 Thông tin Video", padding=15)
+        info_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=10)
         
-        self.info_text = tk.Text(info_frame, height=10, wrap=tk.WORD)
-        info_scrollbar = ttk.Scrollbar(info_frame, orient=tk.VERTICAL, command=self.info_text.yview)
+        # Text container
+        text_container = tk.Frame(info_frame, bg=self.colors['white'])
+        text_container.pack(fill=tk.BOTH, expand=True)
+        
+        self.info_text = tk.Text(text_container, height=10, wrap=tk.WORD,
+                               font=('Consolas', 9),
+                               bg=self.colors['light'],
+                               fg=self.colors['dark'],
+                               relief='flat',
+                               borderwidth=0)
+        info_scrollbar = ttk.Scrollbar(text_container, orient=tk.VERTICAL, 
+                                     command=self.info_text.yview,
+                                     style='Modern.Vertical.TScrollbar')
         self.info_text.configure(yscrollcommand=info_scrollbar.set)
         
-        self.info_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        info_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.info_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        info_scrollbar.pack(side=tk.RIGHT, fill=tk.Y, padx=(0, 5), pady=5)
         
         # Downloaded files list
-        files_frame = ttk.LabelFrame(download_frame, text="Files đã tải", padding=10)
-        files_frame.pack(fill=tk.X, padx=10, pady=5)
+        files_frame = ttk.LabelFrame(download_frame, text="📁 Files đã tải", padding=15)
+        files_frame.pack(fill=tk.X, padx=15, pady=10)
         
-        self.files_listbox = tk.Listbox(files_frame, height=6)
-        files_scrollbar = ttk.Scrollbar(files_frame, orient=tk.VERTICAL, command=self.files_listbox.yview)
+        # Files list container
+        files_container = tk.Frame(files_frame, bg=self.colors['white'])
+        files_container.pack(fill=tk.X, pady=(5, 0))
+        
+        self.files_listbox = tk.Listbox(files_container, height=6,
+                                      font=('Segoe UI', 9),
+                                      bg=self.colors['light'],
+                                      fg=self.colors['dark'],
+                                      relief='flat',
+                                      borderwidth=0,
+                                      selectbackground=self.colors['primary'],
+                                      selectforeground=self.colors['white'])
+        files_scrollbar = ttk.Scrollbar(files_container, orient=tk.VERTICAL, 
+                                      command=self.files_listbox.yview,
+                                      style='Modern.Vertical.TScrollbar')
         self.files_listbox.configure(yscrollcommand=files_scrollbar.set)
         
         self.files_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         files_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
         # Buttons
-        btn_frame = ttk.Frame(files_frame)
+        btn_frame = tk.Frame(files_frame, bg=self.colors['white'])
         btn_frame.pack(fill=tk.X, pady=(10, 0))
         
-        ttk.Button(btn_frame, text="Xóa file", command=self.delete_selected_file).pack(side=tk.LEFT, padx=(0, 5))
-        ttk.Button(btn_frame, text="Mở thư mục", command=self.open_download_folder).pack(side=tk.LEFT, padx=(0, 5))
-        ttk.Button(btn_frame, text="Refresh", command=self.refresh_files_list).pack(side=tk.LEFT)
+        ttk.Button(btn_frame, text="🗑️ Xóa file", style='Danger.TButton',
+                  command=self.delete_selected_file).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Button(btn_frame, text="📂 Mở thư mục", style='Info.TButton',
+                  command=self.open_download_folder).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Button(btn_frame, text="🔄 Refresh", style='Success.TButton',
+                  command=self.refresh_files_list).pack(side=tk.LEFT)
 
         # Progress bar
-        progress_frame = ttk.Frame(download_frame)
-        progress_frame.pack(fill=tk.X, padx=10, pady=(5, 0))
-        self.download_progress = ttk.Progressbar(progress_frame, orient=tk.HORIZONTAL, mode='determinate', maximum=100)
-        self.download_progress.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        self.download_progress_label = ttk.Label(progress_frame, text="0%")
-        self.download_progress_label.pack(side=tk.LEFT, padx=(10,0))
+        progress_frame = ttk.LabelFrame(download_frame, text="📈 Tiến trình", padding=15)
+        progress_frame.pack(fill=tk.X, padx=15, pady=10)
+        
+        progress_container = tk.Frame(progress_frame, bg=self.colors['white'])
+        progress_container.pack(fill=tk.X, pady=(5, 0))
+        
+        self.download_progress = ttk.Progressbar(progress_container, 
+                                               orient=tk.HORIZONTAL, 
+                                               mode='determinate', 
+                                               maximum=100,
+                                               style='Modern.Horizontal.TProgressbar')
+        self.download_progress.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10))
+        self.download_progress_label = tk.Label(progress_container, text="0%",
+                                              font=('Segoe UI', 10, 'bold'),
+                                              fg=self.colors['text_primary'],
+                                              bg=self.colors['white'])
+        self.download_progress_label.pack(side=tk.LEFT)
 
     def create_download_channel_tiktok_tab(self):
         """Tạo tab Download List Channel TikTok"""
-        channel_frame = ttk.Frame(self.notebook)
-        self.notebook.add(channel_frame, text="📚 Download List Channel TikTok")
+        channel_frame = ttk.Frame(self.notebook, style='Card.TFrame')
+        self.notebook.add(channel_frame, text="📚 TikTok Channel")
         
         # URL kênh
-        url_frame = ttk.LabelFrame(channel_frame, text="URL Kênh/Playlist/Profile", padding=10)
-        url_frame.pack(fill=tk.X, padx=10, pady=5)
+        url_frame = ttk.LabelFrame(channel_frame, text="🔗 URL Kênh/Playlist/Profile", padding=15)
+        url_frame.pack(fill=tk.X, padx=15, pady=10)
+        
+        url_input_frame = tk.Frame(url_frame, bg=self.colors['white'])
+        url_input_frame.pack(fill=tk.X, pady=(5, 0))
+        
         self.channel_url_var = tk.StringVar()
-        ttk.Entry(url_frame, textvariable=self.channel_url_var, width=80).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0,10))
-        ttk.Button(url_frame, text="Lấy danh sách", command=self.fetch_channel_list).pack(side=tk.RIGHT)
+        ttk.Entry(url_input_frame, textvariable=self.channel_url_var, 
+                 style='Modern.TEntry', width=80).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0,10))
+        ttk.Button(url_input_frame, text="📋 Lấy danh sách", style='Primary.TButton',
+                  command=self.fetch_channel_list).pack(side=tk.RIGHT)
         
         # Danh sách video (Treeview 4 cột)
-        list_frame = ttk.LabelFrame(channel_frame, text="Danh sách video", padding=10)
-        list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        list_frame = ttk.LabelFrame(channel_frame, text="📋 Danh sách video", padding=15)
+        list_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=10)
         columns = ("stt", "title", "progress", "selected")
         self.channel_tree = ttk.Treeview(list_frame, columns=columns, show='headings', selectmode='extended', height=14)
         self.channel_tree.heading('stt', text='STT')
@@ -188,8 +479,8 @@ class TikTokReupApp:
     
     def create_download_channel_youtube_tab(self):
         """Tạo tab Download List Channel YouTube"""
-        youtube_frame = ttk.Frame(self.notebook)
-        self.notebook.add(youtube_frame, text="📺 Download List Channel YouTube")
+        youtube_frame = ttk.Frame(self.notebook, style='Card.TFrame')
+        self.notebook.add(youtube_frame, text="📺 YouTube Channel")
         
         # API Status
         api_frame = ttk.LabelFrame(youtube_frame, text="Trạng thái API", padding=10)
@@ -292,7 +583,7 @@ class TikTokReupApp:
     
     def create_process_tab(self):
         """Tạo tab Process"""
-        process_frame = ttk.Frame(self.notebook)
+        process_frame = ttk.Frame(self.notebook, style='Card.TFrame')
         self.notebook.add(process_frame, text="✂️ Process")
         
         # File selection
@@ -386,7 +677,7 @@ class TikTokReupApp:
     
     def create_upload_tab(self):
         """Tạo tab Upload"""
-        upload_frame = ttk.Frame(self.notebook)
+        upload_frame = ttk.Frame(self.notebook, style='Card.TFrame')
         self.notebook.add(upload_frame, text="📤 Upload")
         
         # File selection
@@ -445,7 +736,7 @@ class TikTokReupApp:
     
     def create_settings_tab(self):
         """Tạo tab Settings"""
-        settings_frame = ttk.Frame(self.notebook)
+        settings_frame = ttk.Frame(self.notebook, style='Card.TFrame')
         self.notebook.add(settings_frame, text="⚙️ Settings")
         
         # Download settings
@@ -513,9 +804,15 @@ class TikTokReupApp:
         ttk.Button(save_btn_frame, text="Reset", command=self.reset_settings).pack(side=tk.LEFT, padx=(10, 0))
     
     def create_status_bar(self):
-        """Tạo status bar"""
-        self.status_var = tk.StringVar(value="Sẵn sàng")
-        status_bar = ttk.Label(self.root, textvariable=self.status_var, relief=tk.SUNKEN, anchor=tk.W)
+        """Tạo status bar với màu xanh lá cây"""
+        self.status_var = tk.StringVar(value="✅ Sẵn sàng")
+        status_bar = tk.Label(self.root, textvariable=self.status_var, 
+                            font=('Segoe UI', 10, 'bold'),
+                            fg=self.colors['text_primary'],
+                            bg=self.colors['light_hover'],
+                            anchor=tk.W,
+                            padx=20,
+                            pady=10)
         status_bar.pack(side=tk.BOTTOM, fill=tk.X)
     
     def update_status(self, message):
