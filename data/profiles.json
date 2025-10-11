@@ -1,0 +1,78 @@
+[
+  {
+    "id": "profile_001",
+    "username": "john.doe@email.com",
+    "password": "encrypted_password_1",
+    "platform": "TikTok",
+    "status": "Active",
+    "last_login": "2025-10-09 04:17:43",
+    "notes": "Main Account",
+    "created_at": "2024-01-10 10:00:00",
+    "updated_at": "2025-10-09 04:17:43",
+    "profile_dir": "john_doe_email_com",
+    "proxy_settings": {
+      "enabled": false,
+      "host": "",
+      "port": "",
+      "username": "",
+      "password": ""
+    }
+  },
+  {
+    "id": "profile_002",
+    "username": "jane.smith@email.com",
+    "password": "encrypted_password_2",
+    "platform": "Instagram",
+    "status": "Pending",
+    "last_login": "2024-01-14 09:15",
+    "notes": "Backup Account",
+    "created_at": "2024-01-11 11:00:00",
+    "updated_at": "2024-01-14 09:15:00",
+    "profile_dir": "jane_smith_email_com",
+    "proxy_settings": {
+      "enabled": false,
+      "host": "",
+      "port": "",
+      "username": "",
+      "password": ""
+    }
+  },
+  {
+    "id": "profile_003",
+    "username": "mike.wilson@email.com",
+    "password": "encrypted_password_3",
+    "platform": "Facebook",
+    "status": "Blocked",
+    "last_login": "2025-10-09 04:17:59",
+    "notes": "Test Account",
+    "created_at": "2024-01-08 15:00:00",
+    "updated_at": "2025-10-09 04:17:59",
+    "profile_dir": "mike_wilson_email_com",
+    "proxy_settings": {
+      "enabled": false,
+      "host": "",
+      "port": "",
+      "username": "",
+      "password": ""
+    }
+  },
+  {
+    "id": "profile_004",
+    "username": "035768420",
+    "password": "gAAAAABo5tjeBezSq0lFb_plQH2FEvw9aCfpJu46xYQ3a_Q13MvYHOaisShHwi68Ty-j8rubMNooTd8quxh2TA0UB0zoTkVlOA==",
+    "platform": "Facebook",
+    "status": "Active",
+    "last_login": "2025-10-09 04:40:00",
+    "notes": "",
+    "created_at": "2025-10-09 04:34:22",
+    "updated_at": "2025-10-09 04:40:00",
+    "profile_dir": "035768420",
+    "proxy_settings": {
+      "enabled": false,
+      "host": "",
+      "port": "",
+      "username": "",
+      "password": ""
+    }
+  }
+]

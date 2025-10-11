@@ -17,6 +17,7 @@ from src.downloader import VideoDownloader
 from src.youtube_api import YouTubeAPIService
 from src.processor import VideoProcessor
 from src.uploader import VideoUploader
+from src.profile_manager import ProfileManager
 
 class TikTokReupApp:
     """Giao diện chính của ứng dụng"""
@@ -36,6 +37,7 @@ class TikTokReupApp:
         self.youtube_api = YouTubeAPIService(self.config.get('download.youtube_api_key'))
         self.processor = VideoProcessor(self.config)
         self.uploader = VideoUploader(self.config)
+        self.profile_manager = ProfileManager()
         
         # Thiết lập logging
         Logger.setup_logging()
@@ -270,6 +272,9 @@ class TikTokReupApp:
         
         # Tab Settings
         self.create_settings_tab()
+        
+        # Tab Login Profile
+        self.create_login_profile_tab()
         
         # Status bar
         self.create_status_bar()
@@ -1803,6 +1808,728 @@ class TikTokReupApp:
         self.youtube_progress_label.config(text=f"{value:.0f}%")
         self.root.update_idletasks()
     
+    def create_login_profile_tab(self):
+        """Tạo tab Login Profile"""
+        # Tạo frame chính cho tab
+        login_frame = ttk.Frame(self.notebook)
+        self.notebook.add(login_frame, text="👤 Login Profile")
+        
+        # Tạo container chính
+        main_container = tk.Frame(login_frame, bg=self.colors['light'])
+        main_container.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        # Header section
+        header_frame = tk.Frame(main_container, bg=self.colors['white'], relief=tk.RAISED, bd=1)
+        header_frame.pack(fill=tk.X, pady=(0, 20))
+        
+        # Title
+        title_label = tk.Label(header_frame, 
+                              text="🔐 Login Profile Management", 
+                              font=('Segoe UI', 16, 'bold'),
+                              fg=self.colors['text_primary'],
+                              bg=self.colors['white'])
+        title_label.pack(pady=15)
+        
+        # Subtitle
+        subtitle_label = tk.Label(header_frame,
+                                 text="Quản lý tài khoản đăng nhập cho các nền tảng",
+                                 font=('Segoe UI', 10),
+                                 fg=self.colors['gray'],
+                                 bg=self.colors['white'])
+        subtitle_label.pack(pady=(0, 15))
+        
+        # Control panel
+        control_frame = tk.Frame(main_container, bg=self.colors['white'], relief=tk.RAISED, bd=1)
+        control_frame.pack(fill=tk.X, pady=(0, 20))
+        
+        # Add profile button
+        add_btn = tk.Button(control_frame,
+                           text="➕ Thêm Profile",
+                           font=('Segoe UI', 10, 'bold'),
+                           bg=self.colors['primary'],
+                           fg='white',
+                           relief=tk.FLAT,
+                           padx=20,
+                           pady=10,
+                           command=self.add_login_profile)
+        add_btn.pack(side=tk.LEFT, padx=15, pady=15)
+        
+        # Import profiles button
+        import_btn = tk.Button(control_frame,
+                              text="📥 Import Profiles",
+                              font=('Segoe UI', 10, 'bold'),
+                              bg=self.colors['info'],
+                              fg='white',
+                              relief=tk.FLAT,
+                              padx=20,
+                              pady=10,
+                              command=self.import_login_profiles)
+        import_btn.pack(side=tk.LEFT, padx=10, pady=15)
+        
+        # Export profiles button
+        export_btn = tk.Button(control_frame,
+                              text="📤 Export Profiles",
+                              font=('Segoe UI', 10, 'bold'),
+                              bg=self.colors['warning'],
+                              fg='white',
+                              relief=tk.FLAT,
+                              padx=20,
+                              pady=10,
+                              command=self.export_login_profiles)
+        export_btn.pack(side=tk.LEFT, padx=10, pady=15)
+        
+        # Refresh button
+        refresh_btn = tk.Button(control_frame,
+                               text="🔄 Refresh",
+                               font=('Segoe UI', 10, 'bold'),
+                               bg=self.colors['secondary'],
+                               fg='white',
+                               relief=tk.FLAT,
+                               padx=20,
+                               pady=10,
+                               command=self.refresh_login_profiles)
+        refresh_btn.pack(side=tk.RIGHT, padx=15, pady=15)
+        
+        # Profiles table
+        table_frame = tk.Frame(main_container, bg=self.colors['white'], relief=tk.RAISED, bd=1)
+        table_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Table header
+        header_table_frame = tk.Frame(table_frame, bg=self.colors['light'])
+        header_table_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        # Column headers
+        headers = ["Username", "Platform", "Status", "Last Login", "Notes", "Actions"]
+        for i, header in enumerate(headers):
+            header_label = tk.Label(header_table_frame,
+                                   text=header,
+                                   font=('Segoe UI', 10, 'bold'),
+                                   fg=self.colors['text_primary'],
+                                   bg=self.colors['light'])
+            if i == 0:
+                header_label.pack(side=tk.LEFT, padx=(0, 20))
+            elif i == len(headers) - 1:
+                header_label.pack(side=tk.RIGHT, padx=(20, 0))
+            else:
+                header_label.pack(side=tk.LEFT, padx=(0, 15))
+        
+        # Separator
+        separator = tk.Frame(table_frame, height=2, bg=self.colors['primary'])
+        separator.pack(fill=tk.X, padx=10)
+        
+        # Scrollable frame for profiles
+        canvas = tk.Canvas(table_frame, bg=self.colors['white'])
+        scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=self.colors['white'])
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Load profiles from ProfileManager
+        profiles_data = self.profile_manager.get_all_profiles()
+        
+        # Create profile rows
+        for i, profile in enumerate(profiles_data):
+            self.create_profile_row(scrollable_frame, profile, i)
+        
+        # Bind mousewheel to canvas
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
+        # Store references
+        self.login_canvas = canvas
+        self.login_scrollable_frame = scrollable_frame
+    
+    def create_profile_row(self, parent, profile, row_index):
+        """Tạo một hàng profile trong bảng"""
+        row_frame = tk.Frame(parent, bg=self.colors['white'], relief=tk.RIDGE, bd=1)
+        row_frame.pack(fill=tk.X, padx=5, pady=2)
+        
+        # Username
+        username_label = tk.Label(row_frame,
+                                 text=profile['username'],
+                                 font=('Segoe UI', 9),
+                                 fg=self.colors['text_primary'],
+                                 bg=self.colors['white'],
+                                 anchor='w')
+        username_label.pack(side=tk.LEFT, padx=10, pady=10, fill=tk.X, expand=True)
+        
+        # Platform
+        platform_label = tk.Label(row_frame,
+                                  text=profile['platform'],
+                                  font=('Segoe UI', 9),
+                                  fg=self.colors['info'],
+                                  bg=self.colors['white'])
+        platform_label.pack(side=tk.LEFT, padx=10, pady=10)
+        
+        # Status
+        status_color = self.colors['success'] if profile['status'] == 'Active' else \
+                      self.colors['warning'] if profile['status'] == 'Pending' else \
+                      self.colors['danger']
+        
+        status_label = tk.Label(row_frame,
+                               text=profile['status'],
+                               font=('Segoe UI', 9, 'bold'),
+                               fg=status_color,
+                               bg=self.colors['white'])
+        status_label.pack(side=tk.LEFT, padx=10, pady=10)
+        
+        # Last Login
+        last_login_label = tk.Label(row_frame,
+                                   text=profile['last_login'],
+                                   font=('Segoe UI', 9),
+                                   fg=self.colors['gray'],
+                                   bg=self.colors['white'])
+        last_login_label.pack(side=tk.LEFT, padx=10, pady=10)
+        
+        # Notes
+        notes_label = tk.Label(row_frame,
+                              text=profile['notes'],
+                              font=('Segoe UI', 9),
+                              fg=self.colors['gray'],
+                              bg=self.colors['white'])
+        notes_label.pack(side=tk.LEFT, padx=10, pady=10)
+        
+        # Actions
+        actions_frame = tk.Frame(row_frame, bg=self.colors['white'])
+        actions_frame.pack(side=tk.RIGHT, padx=10, pady=5)
+        
+        # Open Profile button
+        open_btn = tk.Button(actions_frame,
+                            text="Mở Profile",
+                            font=('Segoe UI', 8, 'bold'),
+                            bg=self.colors['primary'],
+                            fg='white',
+                            relief=tk.FLAT,
+                            padx=10,
+                            pady=5,
+                            command=lambda: self.open_chrome_profile(profile))
+        open_btn.pack(side=tk.LEFT, padx=2)
+        
+        # Delete button
+        delete_btn = tk.Button(actions_frame,
+                              text="Delete",
+                              font=('Segoe UI', 8, 'bold'),
+                              bg=self.colors['danger'],
+                              fg='white',
+                              relief=tk.FLAT,
+                              padx=10,
+                              pady=5,
+                              command=lambda: self.delete_profile(profile))
+        delete_btn.pack(side=tk.LEFT, padx=2)
+    
+    def add_login_profile(self):
+        """Thêm profile mới"""
+        self.show_add_profile_dialog()
+    
+    def import_login_profiles(self):
+        """Import profiles từ file"""
+        try:
+            file_path = filedialog.askopenfilename(
+                title="Chọn file JSON để import",
+                filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+            )
+            
+            if file_path:
+                if self.profile_manager.import_profiles(file_path):
+                    messagebox.showinfo("Thành công", "Import profiles thành công!")
+                    self.refresh_login_profiles()
+                else:
+                    messagebox.showerror("Lỗi", "Không thể import profiles!")
+        except Exception as e:
+            messagebox.showerror("Lỗi", f"Lỗi khi import: {str(e)}")
+    
+    def export_login_profiles(self):
+        """Export profiles ra file"""
+        try:
+            file_path = filedialog.asksaveasfilename(
+                title="Lưu file JSON",
+                defaultextension=".json",
+                filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+            )
+            
+            if file_path:
+                if self.profile_manager.export_profiles(file_path):
+                    messagebox.showinfo("Thành công", f"Export profiles thành công!\nFile: {file_path}")
+                else:
+                    messagebox.showerror("Lỗi", "Không thể export profiles!")
+        except Exception as e:
+            messagebox.showerror("Lỗi", f"Lỗi khi export: {str(e)}")
+    
+    def refresh_login_profiles(self):
+        """Làm mới danh sách profiles"""
+        try:
+            # Xóa tất cả rows cũ
+            for widget in self.login_scrollable_frame.winfo_children():
+                widget.destroy()
+            
+            # Load lại dữ liệu
+            profiles_data = self.profile_manager.get_all_profiles()
+            
+            # Tạo lại rows
+            for i, profile in enumerate(profiles_data):
+                self.create_profile_row(self.login_scrollable_frame, profile, i)
+            
+            # Cập nhật canvas
+            self.login_canvas.update_idletasks()
+            self.login_canvas.configure(scrollregion=self.login_canvas.bbox("all"))
+            
+        except Exception as e:
+            messagebox.showerror("Lỗi", f"Không thể refresh profiles: {str(e)}")
+    
+    def open_chrome_profile(self, profile):
+        """Mở Chrome profile với cải tiến từ phân tích GoLogin"""
+        try:
+            import subprocess
+            import os
+            import stat
+            import time
+            from pathlib import Path
+            
+            # Lấy thông tin profile từ database
+            profile_id = profile['id']
+            username = profile['username']
+            platform = profile['platform']
+            profile_dir_name = profile['profile_dir']
+            
+            # Tạo đường dẫn profile directory (giống GoLogin)
+            profile_dir = Path(f"data/profiles/{profile_dir_name}")
+            
+            # Đảm bảo thư mục gốc tồn tại
+            profiles_root = Path("data/profiles")
+            profiles_root.mkdir(parents=True, exist_ok=True)
+            
+            # Tạo thư mục profile với cấu trúc giống Chrome
+            try:
+                profile_dir.mkdir(parents=True, exist_ok=True)
+                
+                # Tạo cấu trúc thư mục con giống Chrome
+                default_profile_dir = profile_dir / "Default"
+                default_profile_dir.mkdir(exist_ok=True)
+                
+                # Cấp quyền đầy đủ cho thư mục (Windows)
+                if os.name == 'nt':
+                    os.chmod(profile_dir, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+                    os.chmod(default_profile_dir, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+                    
+            except PermissionError:
+                messagebox.showerror("Lỗi quyền truy cập", 
+                                   f"Không thể tạo thư mục profile.\n"
+                                   f"Vui lòng chạy ứng dụng với quyền Administrator\n"
+                                   f"hoặc cấp quyền cho thư mục: {profile_dir}")
+                return
+            
+            # Tìm Chrome executable với nhiều đường dẫn hơn
+            chrome_paths = [
+                r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+                r"C:\Users\{}\AppData\Local\Google\Chrome\Application\chrome.exe".format(os.getenv('USERNAME')),
+                r"C:\Users\{}\AppData\Local\Google\Chrome\Application\chrome.exe".format(os.getenv('USERPROFILE').split('\\')[-1]),
+                r"C:\Program Files\Google\Chrome Beta\Application\chrome.exe",
+                r"C:\Program Files\Google\Chrome Dev\Application\chrome.exe"
+            ]
+            
+            chrome_exe = None
+            for path in chrome_paths:
+                if os.path.exists(path):
+                    chrome_exe = path
+                    break
+            
+            if not chrome_exe:
+                messagebox.showerror("Lỗi", 
+                                   "Không tìm thấy Chrome browser!\n"
+                                   "Vui lòng cài đặt Google Chrome từ:\n"
+                                   "https://www.google.com/chrome/")
+                return
+            
+            # Kiểm tra và đóng Chrome instances cũ (nếu cần)
+            self._cleanup_chrome_instances()
+            
+            # Xác định URL mở mặc định dựa trên platform
+            platform_urls = {
+                'TikTok': 'https://www.tiktok.com',
+                'Instagram': 'https://www.instagram.com',
+                'Facebook': 'https://www.facebook.com',
+                'YouTube': 'https://www.youtube.com',
+                'Twitter': 'https://twitter.com'
+            }
+            default_url = platform_urls.get(platform, 'https://www.google.com')
+            
+            # Tạo lệnh Chrome với các tham số tối ưu (giống GoLogin)
+            cmd = [
+                chrome_exe,
+                f"--user-data-dir={profile_dir.absolute()}",
+                "--profile-directory=Default",
+                "--no-first-run",
+                "--no-default-browser-check",
+                "--disable-default-apps",
+                "--disable-extensions-except",
+                "--disable-plugins-discovery",
+                "--disable-web-security",
+                "--disable-features=VizDisplayCompositor",
+                "--disable-background-timer-throttling",
+                "--disable-renderer-backgrounding",
+                "--disable-backgrounding-occluded-windows",
+                "--disable-sync",
+                "--disable-translate",
+                "--disable-ipc-flooding-protection",
+                "--disable-hang-monitor",
+                "--disable-prompt-on-repost",
+                "--disable-domain-reliability",
+                "--disable-client-side-phishing-detection",
+                "--disable-component-extensions-with-background-pages",
+                "--disable-background-networking",
+                "--disable-sync-preferences",
+                "--disable-default-apps",
+                "--disable-extensions",
+                "--disable-plugins",
+                "--disable-images",
+                "--disable-javascript",
+                "--disable-plugins-discovery",
+                "--disable-preconnect",
+                "--disable-print-preview",
+                "--disable-save-password-bubble",
+                "--disable-single-click-autofill",
+                "--disable-speech-api",
+                "--disable-web-resources",
+                "--disable-xss-auditor",
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--remote-debugging-port=0",  # Random port để tránh conflict
+                "--window-size=1366,768",
+                "--start-maximized",
+                default_url
+            ]
+            
+            # Chạy Chrome trong thread riêng để không block UI
+            def run_chrome():
+                try:
+                    # Chạy Chrome với subprocess
+                    process = subprocess.Popen(
+                        cmd, 
+                        stdout=subprocess.DEVNULL, 
+                        stderr=subprocess.DEVNULL,
+                        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
+                    )
+                    
+                    # Đợi một chút để Chrome khởi động
+                    time.sleep(3)
+                    
+                    # Kiểm tra Chrome có chạy thành công không
+                    if process.poll() is None:
+                        # Chrome đang chạy thành công
+                        self.root.after(0, lambda: self._show_success_message(profile, profile_dir))
+                    else:
+                        # Chrome đã thoát, có thể có lỗi
+                        self.root.after(0, lambda: self._show_chrome_error())
+                        
+                except Exception as e:
+                    self.root.after(0, lambda: messagebox.showerror("Lỗi", f"Không thể khởi chạy Chrome: {str(e)}"))
+            
+            # Chạy Chrome trong background thread
+            threading.Thread(target=run_chrome, daemon=True).start()
+            
+            # Cập nhật last login trong database
+            self.profile_manager.update_last_login(profile_id)
+            
+        except Exception as e:
+            messagebox.showerror("Lỗi", f"Không thể mở Chrome profile: {str(e)}")
+    
+    def _cleanup_chrome_instances(self):
+        """Dọn dẹp các Chrome instances cũ nếu cần"""
+        try:
+            import subprocess
+            # Kiểm tra Chrome đang chạy
+            result = subprocess.run(['tasklist', '/FI', 'IMAGENAME eq chrome.exe'], 
+                                  capture_output=True, text=True)
+            if 'chrome.exe' in result.stdout:
+                # Có thể đóng Chrome cũ hoặc để nguyên (tùy chọn)
+                # subprocess.run(['taskkill', '/F', '/IM', 'chrome.exe'], capture_output=True)
+                pass
+        except:
+            pass  # Bỏ qua lỗi
+    
+    def _show_success_message(self, profile, profile_dir):
+        """Hiển thị thông báo thành công"""
+        messagebox.showinfo("✅ Thành công", 
+                          f"Đã mở Chrome profile thành công!\n\n"
+                          f"👤 Username: {profile['username']}\n"
+                          f"🌐 Platform: {profile['platform']}\n"
+                          f"📁 Profile dir: {profile_dir}\n\n"
+                          f"Chrome đang chạy độc lập với profile chính của bạn.")
+    
+    def _show_chrome_error(self):
+        """Hiển thị lỗi Chrome"""
+        messagebox.showerror("❌ Lỗi Chrome", 
+                           "Chrome không thể khởi động!\n\n"
+                           "Có thể do:\n"
+                           "• Chrome đang chạy với profile khác\n"
+                           "• Không đủ quyền truy cập\n"
+                           "• Chrome bị lỗi\n\n"
+                           "Vui lòng thử lại sau vài giây.")
+    
+    def delete_profile(self, profile):
+        """Xóa profile"""
+        result = messagebox.askyesno("Xóa Profile", f"Bạn có chắc muốn xóa profile: {profile['username']}?")
+        if result:
+            try:
+                if self.profile_manager.delete_profile(profile['id']):
+                    messagebox.showinfo("Xóa Profile", f"Đã xóa profile: {profile['username']}")
+                    # Refresh danh sách
+                    self.refresh_login_profiles()
+                else:
+                    messagebox.showerror("Lỗi", "Không thể xóa profile!")
+                
+            except Exception as e:
+                messagebox.showerror("Lỗi", f"Không thể xóa profile: {str(e)}")
+    
+    def show_add_profile_dialog(self):
+        """Hiển thị dialog thêm profile mới - Đơn giản và chắc chắn hiển thị"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("➕ Thêm Profile Mới")
+        dialog.geometry("600x500")
+        dialog.resizable(False, False)
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Center dialog
+        dialog.update_idletasks()
+        x = (dialog.winfo_screenwidth() // 2) - (600 // 2)
+        y = (dialog.winfo_screenheight() // 2) - (500 // 2)
+        dialog.geometry(f"600x500+{x}+{y}")
+        
+        # Main container
+        main_container = tk.Frame(dialog, bg=self.colors['light'])
+        main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Header
+        header_frame = tk.Frame(main_container, bg=self.colors['white'], relief=tk.RAISED, bd=1)
+        header_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        title_label = tk.Label(header_frame, 
+                              text="➕ THÊM PROFILE MỚI",
+                              font=('Segoe UI', 18, 'bold'),
+                              fg=self.colors['text_primary'],
+                              bg=self.colors['white'])
+        title_label.pack(pady=15)
+        
+        # Định nghĩa hàm save_profile trước
+        def save_profile():
+            try:
+                username = username_entry.get().strip()
+                password = password_entry.get().strip()
+                platform = platform_var.get()
+                status = status_var.get()
+                notes = notes_entry.get().strip()
+                
+                # Validation chi tiết
+                if not username:
+                    messagebox.showerror("❌ Lỗi", "Vui lòng nhập username/email!")
+                    username_entry.focus()
+                    return
+                
+                if not password:
+                    messagebox.showerror("❌ Lỗi", "Vui lòng nhập password!")
+                    password_entry.focus()
+                    return
+                
+                # Kiểm tra độ dài password
+                if len(password) < 6:
+                    messagebox.showerror("❌ Lỗi", "Password phải có ít nhất 6 ký tự!")
+                    password_entry.focus()
+                    return
+                
+                # Kiểm tra email format cơ bản
+                if '@' in username and '.' not in username.split('@')[1]:
+                    messagebox.showerror("❌ Lỗi", "Email không hợp lệ!")
+                    username_entry.focus()
+                    return
+                
+                # Kiểm tra username đã tồn tại chưa
+                if self.profile_manager.get_profile_by_username(username):
+                    messagebox.showerror("❌ Lỗi", "Username này đã tồn tại!")
+                    username_entry.focus()
+                    return
+                
+                # Hiển thị loading
+                save_btn.config(text="💾 Đang lưu...", state='disabled')
+                header_save_btn.config(text="💾 Đang lưu...", state='disabled')
+                status_label.config(text="Đang xử lý...", fg='#007bff')
+                dialog.update()
+                
+                # Tạo profile data
+                profile_data = {
+                    'username': username,
+                    'password': password,
+                    'platform': platform,
+                    'status': status,
+                    'notes': notes
+                }
+                
+                # Lưu profile
+                if self.profile_manager.add_profile(profile_data):
+                    messagebox.showinfo("✅ Thành công", f"Đã thêm profile mới!\nUsername: {username}\nPlatform: {platform}")
+                    dialog.destroy()
+                    self.refresh_login_profiles()
+                else:
+                    messagebox.showerror("❌ Lỗi", "Không thể thêm profile! Vui lòng thử lại.")
+                    save_btn.config(text="💾 LƯU PROFILE", state='normal')
+                    header_save_btn.config(text="💾 LƯU PROFILE", state='normal')
+                    status_label.config(text="Lỗi khi lưu", fg='#dc3545')
+                    
+            except Exception as e:
+                messagebox.showerror("❌ Lỗi", f"Lỗi không mong muốn: {str(e)}")
+                save_btn.config(text="💾 LƯU PROFILE", state='normal')
+                header_save_btn.config(text="💾 LƯU PROFILE", state='normal')
+                status_label.config(text="Lỗi không mong muốn", fg='#dc3545')
+        
+        # Nút lưu lớn ở header
+        header_save_btn = tk.Button(header_frame,
+                                   text="💾 LƯU PROFILE",
+                                   font=('Segoe UI', 14, 'bold'),
+                                   bg='#28a745',
+                                   fg='white',
+                                   relief=tk.RAISED,
+                                   bd=3,
+                                   padx=30,
+                                   pady=10,
+                                   command=save_profile,
+                                   cursor='hand2')
+        header_save_btn.pack(pady=(0, 15))
+        
+        # Form container
+        form_frame = tk.Frame(main_container, bg=self.colors['white'], relief=tk.RAISED, bd=1)
+        form_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        
+        # Form fields với grid layout để căn chỉnh đều
+        fields_container = tk.Frame(form_frame, bg=self.colors['white'])
+        fields_container.pack(fill=tk.BOTH, expand=True, padx=30, pady=20)
+        
+        # Configure grid weights
+        fields_container.grid_columnconfigure(1, weight=1)
+        
+        # Username field
+        tk.Label(fields_container, text="👤 Username/Email:", 
+                font=('Segoe UI', 12, 'bold'),
+                fg=self.colors['text_primary'],
+                bg=self.colors['white']).grid(row=0, column=0, sticky='w', pady=(0, 5))
+        username_entry = tk.Entry(fields_container, font=('Segoe UI', 11))
+        username_entry.grid(row=0, column=1, sticky='ew', pady=(0, 15), padx=(10, 0))
+        
+        # Password field
+        tk.Label(fields_container, text="🔒 Password:", 
+                font=('Segoe UI', 12, 'bold'),
+                fg=self.colors['text_primary'],
+                bg=self.colors['white']).grid(row=1, column=0, sticky='w', pady=(0, 5))
+        password_entry = tk.Entry(fields_container, font=('Segoe UI', 11), show="*")
+        password_entry.grid(row=1, column=1, sticky='ew', pady=(0, 15), padx=(10, 0))
+        
+        # Platform field
+        tk.Label(fields_container, text="🌐 Platform:", 
+                font=('Segoe UI', 12, 'bold'),
+                fg=self.colors['text_primary'],
+                bg=self.colors['white']).grid(row=2, column=0, sticky='w', pady=(0, 5))
+        platform_var = tk.StringVar(value="TikTok")
+        platform_combo = ttk.Combobox(fields_container, textvariable=platform_var, 
+                                     values=["TikTok", "Instagram", "Facebook", "YouTube", "Twitter"],
+                                     font=('Segoe UI', 11), state="readonly")
+        platform_combo.grid(row=2, column=1, sticky='ew', pady=(0, 15), padx=(10, 0))
+        
+        # Status field
+        tk.Label(fields_container, text="📊 Status:", 
+                font=('Segoe UI', 12, 'bold'),
+                fg=self.colors['text_primary'],
+                bg=self.colors['white']).grid(row=3, column=0, sticky='w', pady=(0, 5))
+        status_var = tk.StringVar(value="Active")
+        status_combo = ttk.Combobox(fields_container, textvariable=status_var,
+                                   values=["Active", "Pending", "Blocked", "Inactive"],
+                                   font=('Segoe UI', 11), state="readonly")
+        status_combo.grid(row=3, column=1, sticky='ew', pady=(0, 15), padx=(10, 0))
+        
+        # Notes field
+        tk.Label(fields_container, text="📝 Notes:", 
+                font=('Segoe UI', 12, 'bold'),
+                fg=self.colors['text_primary'],
+                bg=self.colors['white']).grid(row=4, column=0, sticky='w', pady=(0, 5))
+        notes_entry = tk.Entry(fields_container, font=('Segoe UI', 11))
+        notes_entry.grid(row=4, column=1, sticky='ew', pady=(0, 20), padx=(10, 0))
+        
+        # Buttons container - CHẮC CHẮN HIỂN THỊ
+        buttons_container = tk.Frame(main_container, bg=self.colors['white'], relief=tk.RAISED, bd=2)
+        buttons_container.pack(fill=tk.X, pady=(10, 0))
+        
+        buttons_frame = tk.Frame(buttons_container, bg=self.colors['white'])
+        buttons_frame.pack(fill=tk.X, padx=20, pady=25)
+        
+        
+        def cancel():
+            dialog.destroy()
+        
+        # SAVE BUTTON - RẤT LỚN VÀ RÕ RÀNG
+        save_btn = tk.Button(buttons_frame,
+                            text="💾 LƯU PROFILE",
+                            font=('Segoe UI', 16, 'bold'),
+                            bg='#28a745',  # Màu xanh lá cây đậm
+                            fg='white',
+                            relief=tk.RAISED,
+                            bd=4,
+                            padx=50,
+                            pady=25,
+                            command=save_profile,
+                            cursor='hand2',
+                            width=15,
+                            height=2)
+        save_btn.pack(side=tk.LEFT, padx=(0, 30))
+        
+        # Status label để hiển thị trạng thái
+        status_label = tk.Label(buttons_frame,
+                               text="",
+                               font=('Segoe UI', 10),
+                               fg=self.colors['text_secondary'],
+                               bg=self.colors['white'])
+        status_label.pack(side=tk.LEFT, padx=(20, 0))
+        
+        # CANCEL BUTTON
+        cancel_btn = tk.Button(buttons_frame,
+                              text="❌ HỦY",
+                              font=('Segoe UI', 16, 'bold'),
+                              bg='#dc3545',  # Màu đỏ đậm
+                              fg='white',
+                              relief=tk.RAISED,
+                              bd=4,
+                              padx=50,
+                              pady=25,
+                              command=cancel,
+                              cursor='hand2',
+                              width=15,
+                              height=2)
+        cancel_btn.pack(side=tk.LEFT)
+        
+        # Bind Enter key để lưu profile
+        def on_enter_key(event):
+            save_profile()
+        
+        username_entry.bind('<Return>', on_enter_key)
+        password_entry.bind('<Return>', on_enter_key)
+        notes_entry.bind('<Control-Return>', on_enter_key)  # Ctrl+Enter cho text area
+        
+        # Focus on username entry
+        username_entry.focus()
+        
+        # Đảm bảo dialog hiển thị
+        dialog.lift()
+        dialog.focus_force()
+    
     def run(self):
         """Chạy ứng dụng"""
         # Tạo thư mục cần thiết
@@ -1810,6 +2537,7 @@ class TikTokReupApp:
         FileManager.ensure_dir('data/processed')
         FileManager.ensure_dir('data/music')
         FileManager.ensure_dir('data/fonts')
+        FileManager.ensure_dir('data/profiles')
         FileManager.ensure_dir('logs')
         
         # Làm mới danh sách file
